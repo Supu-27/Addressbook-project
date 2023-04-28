@@ -1,49 +1,60 @@
-pipeline{
-	agent any
-      stages{
-           stage('Checkout by supriya'){
-	    
-               steps{
-		 echo 'cloning..'
-                 git 'https://github.com/Supu-27/Addressbook-project.git'
-              }
-          }
-          stage('Compile'){
-             
-              steps{
-                  echo 'compiling..'
-                  sh 'mvn supriyamaven compile'
-	      }
-          }
-          stage('CodeReview'){
-		  
-              steps{
-		    
-		  echo 'codeReview'
-                  sh 'mvn pmd:pmd'
-              }
-          }
-           stage('UnitTest'){
-		  
-              steps{
-	         
-                  sh 'mvn test'
-              }
-               post {
-               success {
-                   junit 'target/surefire-reports/*.xml'
-               }
-           }	
-          }
-          
-          stage('Package'){
-		  
-              steps{
-		  
-                  sh 'mvn package'
-              }
-          }
-	     
-          
-      }
+pipeline {
+    agent any
+    tools {
+        maven 'supriyamaven'
+    }
+    environment {
+        APP_NAME = 'Addressbook-project'
+        APP_PORT = '8080'
+        TOMCAT_HOME = '/opt/tomcat'
+        DEPLOY_DIR = "$TOMCAT_HOME/webapps"
+    }
+    stages {
+        stage('Checkout') {
+            steps {
+                echo 'Cloning the repository'
+                git 'https://github.com/Supu-27/Addressbook-project.git'
+            }
+        }
+        stage('Build') {
+            steps {
+                echo 'Building the application'
+                sh 'mvn clean package'
+            }
+        }
+        stage('Deploy') {
+            steps {
+                echo 'Deploying the application'
+                sh 'cp target/addressbook.war $DEPLOY_DIR'
+            }
+        }
+        stage('Start Tomcat') {
+            steps {
+                echo 'Starting Tomcat'
+                sh "$TOMCAT_HOME/bin/startup.sh"
+            }
+        }
+        stage('Health Check') {
+            steps {
+                echo 'Checking if application is running'
+                script {
+                    def appUrl = "http://localhost:$APP_PORT/$APP_NAME/"
+                    sh "sleep 10"
+                    try {
+                        sh "curl --fail --silent $appUrl > /dev/null"
+                        echo "Application is running at $appUrl"
+                    } catch(error) {
+                        error "Application is not running at $appUrl"
+                    }
+                }
+            }
+        }
+    }
+    post {
+        always {
+            echo 'Stopping Tomcat'
+            sh "$TOMCAT_HOME/bin/shutdown.sh"
+        }
+    }
 }
+
