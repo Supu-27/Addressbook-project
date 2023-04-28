@@ -1,7 +1,7 @@
 pipeline{
 	agent any
       stages{
-           stage('Checkout'){
+           stage('Checkout by supriya'){
 	    
                steps{
 		 echo 'cloning..'
