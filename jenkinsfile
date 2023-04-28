@@ -12,7 +12,7 @@ pipeline{
              
               steps{
                   echo 'compiling..'
-                  sh 'supriyamaven compile'
+                  sh 'mvn supriyamaven compile'
 	      }
           }
           stage('CodeReview'){
